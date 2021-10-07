@@ -1,0 +1,183 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition_2": {
+                "actions": {
+                    "Terminate": {
+                        "inputs": {
+                            "runError": {
+                                "code": "1",
+                                "message": "One of the steps failed"
+                            },
+                            "runStatus": "Failed"
+                        },
+                        "runAfter": {},
+                        "type": "Terminate"
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@variables('boolTerminate')",
+                                true
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each": {
+                "actions": {
+                    "Condition": {
+                        "actions": {
+                            "Delete_message": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['azurequeues']['connectionId']"
+                                        }
+                                    },
+                                    "method": "delete",
+                                    "path": "/@{encodeURIComponent('{{multistep-example}}')}/messages/@{encodeURIComponent(items('For_each')?['MessageId'])}",
+                                    "queries": {
+                                        "popreceipt": "@items('For_each')?['PopReceipt']"
+                                    }
+                                },
+                                "runAfter": {},
+                                "type": "ApiConnection"
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "Set_variable": {
+                                    "inputs": {
+                                        "name": "boolTerminate",
+                                        "value": true
+                                    },
+                                    "runAfter": {},
+                                    "type": "SetVariable"
+                                }
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "contains": [
+                                        "@items('For_each')?['MessageText']",
+                                        "completed"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {},
+                        "type": "If"
+                    }
+                },
+                "foreach": "@body('Get_messages')?['QueueMessagesList']?['QueueMessage']",
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Get_messages": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azurequeues']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/@{encodeURIComponent('{{multistep-example}}')}/messages",
+                    "queries": {
+                        "numofmessages": "11"
+                    }
+                },
+                "runAfter": {
+                    "Response": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "boolTerminate",
+                            "type": "boolean",
+                            "value": false
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get_messages": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Response": {
+                "inputs": {
+                    "body": {},
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {},
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "other_data": {
+                                "type": "string"
+                            },
+                            "process_name": {
+                                "type": "string"
+                            },
+                            "process_type": {
+                                "type": "string"
+                            },
+                            "run_control_id": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azurequeues": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/azurequeues",
+                    "connectionName": "azurequeues",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azurequeues"
+                }
+            }
+        }
+    }
+}

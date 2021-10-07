@@ -1,0 +1,287 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "ForEach-Folder": {
+                "actions": {
+                    "Find-Files": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/datasets/default/findFile",
+                            "queries": {
+                                "findMode": "Pattern",
+                                "maxFileCount": 20,
+                                "path": "@variables('strOneDrivePath')",
+                                "query": "*"
+                            }
+                        },
+                        "runAfter": {
+                            "Set-FolderNameFileStorage": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "ForEach-File": {
+                        "actions": {
+                            "Condition": {
+                                "actions": {},
+                                "else": {
+                                    "actions": {
+                                        "Delete_file": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "delete",
+                                                "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(variables('strFileID')))}"
+                                            },
+                                            "runAfter": {},
+                                            "type": "ApiConnection"
+                                        }
+                                    }
+                                },
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "equals": [
+                                                "@equals(bool(item()?['IsFolder']), bool('True'))",
+                                                true
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "runAfter": {
+                                    "Set-strFileID": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "If"
+                            },
+                            "Create-FileInStorage": {
+                                "inputs": {
+                                    "body": "@items('ForEach-File')",
+                                    "headers": {
+                                        "ReadFileMetadataFromServer": true
+                                    },
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "path": "/datasets/default/files",
+                                    "queries": {
+                                        "folderPath": "@variables('strFileStoragePath')",
+                                        "name": "@items('ForEach-File')?['Name']",
+                                        "queryParametersSingleEncoded": true
+                                    }
+                                },
+                                "runAfter": {},
+                                "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                        "transferMode": "Chunked"
+                                    }
+                                },
+                                "type": "ApiConnection"
+                            },
+                            "Set-strFileID": {
+                                "inputs": {
+                                    "name": "strFileID",
+                                    "value": "@items('ForEach-File')?['Id']"
+                                },
+                                "runAfter": {
+                                    "Create-FileInStorage": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "SetVariable"
+                            }
+                        },
+                        "foreach": "@body('Find-Files')",
+                        "runAfter": {
+                            "Find-Files": [
+                                "Succeeded"
+                            ]
+                        },
+                        "runtimeConfiguration": {
+                            "concurrency": {
+                                "repetitions": 1
+                            }
+                        },
+                        "type": "Foreach"
+                    },
+                    "Set-FolderName": {
+                        "inputs": {
+                            "name": "strFolderName",
+                            "value": "@{items('ForEach-Folder')}"
+                        },
+                        "runAfter": {},
+                        "type": "SetVariable"
+                    },
+                    "Set-FolderNameFileStorage": {
+                        "inputs": {
+                            "name": "strFileStoragePath",
+                            "value": "{{some-file-storage-path}}@{variables('strFolderName')}"
+                        },
+                        "runAfter": {
+                            "Set-OneDrivePath": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Set-OneDrivePath": {
+                        "inputs": {
+                            "name": "strOneDrivePath",
+                            "value": "{{some-onedrive-path}}@{variables('strFolderName')}"
+                        },
+                        "runAfter": {
+                            "Set-FolderName": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    }
+                },
+                "foreach": "@variables('arrFolders')",
+                "runAfter": {
+                    "Initialize-strFileID": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "repetitions": 1
+                    }
+                },
+                "type": "Foreach"
+            },
+            "Initialize-arrFolders": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "arrFolders",
+                            "type": "array",
+                            "value": [
+                                "MyFolder1",
+                                "MyFolder2",
+                                "MyFolder3",
+                                "MyFolder4",
+                                "MyFolder5"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Initialize-strFileID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strFileID",
+                            "type": "string",
+                            "value": "@{string('')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-strFileStoragePath": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-strFileStoragePath": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strFileStoragePath",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-strOneDrivePath": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-strFolderName": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strFolderName",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-arrFolders": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-strOneDrivePath": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strOneDrivePath",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-strFolderName": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Recurrence": {
+                "recurrence": {
+                    "frequency": "Hour",
+                    "interval": 3,
+                    "timeZone": "Central Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azurefile": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}RG/providers/Microsoft.Web/connections/azurefile",
+                    "connectionName": "azurefile",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azurefile"
+                },
+                "onedriveforbusiness": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}RG/providers/Microsoft.Web/connections/onedriveforbusiness",
+                    "connectionName": "onedriveforbusiness",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/onedriveforbusiness"
+                }
+            }
+        }
+    }
+}

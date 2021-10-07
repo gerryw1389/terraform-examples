@@ -1,0 +1,283 @@
+{
+   "definition": {
+       "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+       "actions": {
+           "Get-Password": {
+               "inputs": {
+                   "host": {
+                       "connection": {
+                           "name": "@parameters('$connections')['keyvault']['connectionId']"
+                       }
+                   },
+                   "method": "get",
+                   "path": "/secrets/@{encodeURIComponent('UserPassword')}/value"
+               },
+               "runAfter": {
+                   "Get-Username": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "ApiConnection"
+           },
+           "Get-SNCount": {
+               "actions": {
+                   "Increment_variable": {
+                       "inputs": {
+                           "name": "Set-SNResponseCount",
+                           "value": 1
+                       },
+                       "runAfter": {},
+                       "type": "IncrementVariable"
+                   }
+               },
+               "expression": {
+                   "and": [
+                       {
+                           "greater": [
+                               "@variables('Get-SNResponseLength')",
+                               13
+                           ]
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Get-SNResponseLength": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "If"
+           },
+           "Get-SNResponse": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "Get-SNResponse",
+                           "type": "string",
+                           "value": "@{body('Scan-SN')}"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Scan-SN": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Get-SNResponseLength": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "Get-SNResponseLength",
+                           "type": "integer",
+                           "value": "@length(variables('Get-SNResponse'))"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Set-SNResponseCount": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Get-Username": {
+               "inputs": {
+                   "host": {
+                       "connection": {
+                           "name": "@parameters('$connections')['keyvault']['connectionId']"
+                       }
+                   },
+                   "method": "get",
+                   "path": "/secrets/@{encodeURIComponent('Username')}/value"
+               },
+               "runAfter": {},
+               "type": "ApiConnection"
+           },
+           "Initialize-Password": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "password",
+                           "type": "string",
+                           "value": "@body('Get-Password')?['value']"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Initialize-Username": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Initialize-Username": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "username",
+                           "type": "string",
+                           "value": "@body('Get-Username')?['value']"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Get-Password": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Initialize-basic_auth": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "basic_auth",
+                           "type": "string",
+                           "value": "@{concat('Basic ', base64(variables('user_pass')))}"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Initialize-user_pass": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Initialize-user_pass": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "user_pass",
+                           "type": "string",
+                           "value": "@{concat(variables('username'),':',variables('password'))}"
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Initialize-Password": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Scan-SN": {
+               "inputs": {
+                   "headers": {
+                       "Authorization": "@variables('basic_auth')"
+                   },
+                   "method": "GET",
+                   "uri": "https://{your-company}.service-now.com/api/now/table/sc_request?sysparm_query={your-query}"
+               },
+               "runAfter": {
+                   "Initialize-basic_auth": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "Http"
+           },
+           "Set-SNResponseCount": {
+               "inputs": {
+                   "variables": [
+                       {
+                           "name": "Set-SNResponseCount",
+                           "type": "integer",
+                           "value": 0
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Get-SNResponse": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "InitializeVariable"
+           },
+           "Start-RunbookIfGt0": {
+               "actions": {
+                   "Increment_variable_2": {
+                       "inputs": {
+                           "name": "Set-SNResponseCount",
+                           "value": 10
+                       },
+                       "runAfter": {},
+                       "type": "IncrementVariable"
+                   },
+                   "Send_an_email_(V2)": {
+                       "inputs": {
+                           "body": {
+                               "Body": "<p>example text</p>",
+                               "Subject": "Runbook Triggered",
+                               "To": "{{some-email-address}}"
+                           },
+                           "host": {
+                               "connection": {
+                                   "name": "@parameters('$connections')['office365']['connectionId']"
+                               }
+                           },
+                           "method": "post",
+                           "path": "/v2/Mail"
+                       },
+                       "runAfter": {
+                           "Increment_variable_2": [
+                               "Succeeded"
+                           ]
+                       },
+                       "type": "ApiConnection"
+                   }
+               },
+               "expression": {
+                   "and": [
+                       {
+                           "greater": [
+                               "@variables('Set-SNResponseCount')",
+                               0
+                           ]
+                       }
+                   ]
+               },
+               "runAfter": {
+                   "Get-SNCount": [
+                       "Succeeded"
+                   ]
+               },
+               "type": "If"
+           }
+       },
+       "contentVersion": "1.0.0.0",
+       "outputs": {},
+       "parameters": {
+           "$connections": {
+               "defaultValue": {},
+               "type": "Object"
+           }
+       },
+       "triggers": {
+           "Recurrence": {
+               "recurrence": {
+                   "frequency": "Hour",
+                   "interval": 3,
+                   "timeZone": "Central Standard Time"
+               },
+               "type": "Recurrence"
+           }
+       }
+   },
+   "parameters": {
+       "$connections": {
+           "value": {
+               "keyvault": {
+                   "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/keyvault-1",
+                   "connectionName": "keyvault-1",
+                   "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/keyvault"
+               },
+               "office365": {
+                   "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/office365",
+                   "connectionName": "office365",
+                   "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/office365"
+               }
+           }
+       }
+   }
+}

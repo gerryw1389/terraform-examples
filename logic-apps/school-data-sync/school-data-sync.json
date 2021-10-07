@@ -1,0 +1,363 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition_2": {
+                "actions": {
+                    "For_each": {
+                        "actions": {
+                            "Get_Upload_Url_for_CSV_Profle": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['microsoftschooldatasync_1']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/synchronizationProfiles/@{encodeURIComponent(variables('instanceId'))}/uploadUrl"
+                                },
+                                "runAfter": {},
+                                "type": "ApiConnection"
+                            },
+                            "Get_file_content": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(body('Get_file_metadata')?['Id']))}/content",
+                                    "queries": {
+                                        "inferContentType": true
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_file_metadata": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "ApiConnection"
+                            },
+                            "Get_file_metadata": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(items('For_each')?['Id']))}"
+                                },
+                                "runAfter": {
+                                    "Get_Upload_Url_for_CSV_Profle": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "ApiConnection"
+                            },
+                            "HTTP": {
+                                "inputs": {
+                                    "body": "@body('Get_file_content')",
+                                    "headers": {
+                                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                        "x-ms-blob-content-type": "application/vnd.ms-excel",
+                                        "x-ms-blob-type": "BlockBlob",
+                                        "x-ms-meta-uploadvia": "PortalUpload"
+                                    },
+                                    "method": "PUT",
+                                    "uri": "@{first(variables('SAS Url Parts'))}/@{body('Get_file_metadata')?['Name']}?@{last(variables('SAS Url Parts'))}"
+                                },
+                                "runAfter": {
+                                    "Set_variable": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "Http"
+                            },
+                            "Set_variable": {
+                                "inputs": {
+                                    "name": "SAS URL Parts",
+                                    "value": "@split(body('Get_Upload_Url_for_CSV_Profle')?['value'],'?')"
+                                },
+                                "runAfter": {
+                                    "Get_file_content": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "SetVariable"
+                            }
+                        },
+                        "foreach": "@body('List_files')?['value']",
+                        "runAfter": {
+                            "List_files": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Foreach"
+                    },
+                    "Get_Profiles": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['microsoftschooldatasync_1']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/synchronizationProfiles"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    },
+                    "List_files": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/datasets/default/foldersV2/@{encodeURIComponent(encodeURIComponent('{{some-guid}}'))}",
+                            "queries": {
+                                "nextPageMarker": "",
+                                "useFlatListing": false
+                            }
+                        },
+                        "metadata": {
+                            "{{some-guid}}": "{{some-file-storage-path}}",
+                            "{some-guid2}": "{{some-file-storage-path-2}}"
+                        },
+                        "runAfter": {
+                            "Get_Profiles": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Verify_Uploaded_Files_and_Start_Sync": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['microsoftschooldatasync_1']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/synchronizationProfiles/@{encodeURIComponent(variables('instanceId'))}/start"
+                        },
+                        "runAfter": {
+                            "For_each": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Terminate_2": {
+                            "inputs": {
+                                "runError": {
+                                    "code": "1",
+                                    "message": "Workflow is missing files"
+                                },
+                                "runStatus": "Failed"
+                            },
+                            "runAfter": {},
+                            "type": "Terminate"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "school.csv"
+                            ]
+                        },
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "section.csv"
+                            ]
+                        },
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "student.csv"
+                            ]
+                        },
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "studentenrollment.csv"
+                            ]
+                        },
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "teacher.csv"
+                            ]
+                        },
+                        {
+                            "contains": [
+                                "@variables('files')",
+                                "teacherroster.csv"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "For_each_2": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each_2": {
+                "actions": {
+                    "Append_to_array_variable": {
+                        "inputs": {
+                            "name": "files",
+                            "value": "@items('For_each_2')?['Name']"
+                        },
+                        "runAfter": {},
+                        "type": "AppendToArrayVariable"
+                    }
+                },
+                "foreach": "@body('List_files_2')?['value']",
+                "runAfter": {
+                    "List_files_2": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Initialize-FilesArray": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "files",
+                            "type": "array",
+                            "value": [
+                                "value"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Response": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "List_files_2": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azurefile']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/default/foldersV2/@{encodeURIComponent(encodeURIComponent('{{some-path}}'))}",
+                    "queries": {
+                        "nextPageMarker": "",
+                        "useFlatListing": false
+                    }
+                },
+                "runAfter": {
+                    "SAS_URL_Parts": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Response": {
+                "inputs": {
+                    "body": {},
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {},
+                "type": "Response"
+            },
+            "SAS_URL_Parts": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "SAS URL Parts",
+                            "type": "array",
+                            "value": [
+                                "tbd",
+                                "tbd"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "instanceId": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "instanceId": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "instanceId",
+                            "type": "string",
+                            "value": "{{some-instance-id}}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-FilesArray": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {},
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azurefile": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}RG/providers/Microsoft.Web/connections/azurefile",
+                    "connectionName": "azurefile",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azurefile"
+                },
+                "microsoftschooldatasync_1": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}RG/providers/Microsoft.Web/connections/microsoftschooldatasync-1",
+                    "connectionName": "microsoftschooldatasync-1",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/microsoftschooldatasync"
+                }
+            }
+        }
+    }
+}

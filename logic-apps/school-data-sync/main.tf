@@ -36,7 +36,7 @@ provider "azurerm" {
 
 # Create a resource group
 resource "azurerm_resource_group" "azurerg" {
-   name                 = "email-filter-la"
+   name                 = "logic-app--school-data-sync"
    location             = "southcentralus"
 
    tags                 = {
@@ -46,7 +46,7 @@ resource "azurerm_resource_group" "azurerg" {
 
 # Deploy the ARM template to configure the workflow in the Logic App
 data "template_file" "workflow" {
-  template              = file("email_filter.json")
+  template              = file("school-data-sync.json")
 }
 
 # Deploy the ARM template workflow
@@ -54,7 +54,7 @@ resource "azurerm_resource_group_template_deployment" "workflow" {
    name                 = "la_deployment_${formatdate("YYMMDDhhmmss", timestamp())}"
    resource_group_name  = azurerm_resource_group.azurerg.name
    
-   deployment_mode      = "Incremental"
+   deployment_mode      = "Complete"
    
    template_content     = data.template_file.workflow.template
 }

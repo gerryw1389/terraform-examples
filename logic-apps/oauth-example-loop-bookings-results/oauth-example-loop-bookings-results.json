@@ -1,0 +1,733 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Add-Each-To-arrBookings": {
+                "actions": {
+                    "Append-ResponseToArray": {
+                        "inputs": {
+                            "name": "arrBooking",
+                            "value": "@items('Add-Each-To-arrBookings')"
+                        },
+                        "runAfter": {},
+                        "type": "AppendToArrayVariable"
+                    }
+                },
+                "foreach": "@body('Get-FirstValues')",
+                "runAfter": {
+                    "Get-FirstValues": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Call-Booking": {
+                "inputs": {
+                    "headers": {
+                        "Authorization": "bearer @{body('Parse-AccessKey')?['access_token']}",
+                        "Host": "graph.microsoft.com"
+                    },
+                    "method": "GET",
+                    "uri": "https://graph.microsoft.com/beta/bookingBusinesses/NewTeamsPhoneDeviceRequest@{your-site}/appointments?$select=start%2cserviceName%2cserviceID"
+                },
+                "runAfter": {
+                    "Initialize-BookingData": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "Create-Blob": {
+                "inputs": {
+                    "body": "@variables('BookingResults')",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/datasets/default/files",
+                    "queries": {
+                        "folderPath": "/testing-logic-apps",
+                        "name": "booking_test.json",
+                        "queryParametersSingleEncoded": true
+                    }
+                },
+                "runAfter": {
+                    "Initialize-BookingResults": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "contentTransfer": {
+                        "transferMode": "Chunked"
+                    }
+                },
+                "type": "ApiConnection"
+            },
+            "Get-AccessToken": {
+                "inputs": {
+                    "body": "grant_type=password\n&client_id= @{variables('ClientID')}\n&client_secret =@{variables('ClientSecret')}\n&scope=Bookings.ReadWrite.All BookingsAppointment.ReadWrite.All Bookings.Manage.All user.read\n&username = @{variables('Username')}\n&password = @{variables('UserPassword')}\n\n\n",
+                    "headers": {
+                        "Host": "login.microsoftonline.com",
+                        "content-type": "application/x-www-form-urlencoded"
+                    },
+                    "method": "POST",
+                    "uri": "https://login.microsoftonline.com/@{variables('TenantID')}/oauth2/v2.0/token"
+                },
+                "runAfter": {
+                    "Set-ClientSecret": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "Get-ClientID": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['keyvault_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/secrets/@{encodeURIComponent('Bookings-ClientID')}/value"
+                },
+                "runAfter": {
+                    "Set-UserPassword": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Get-ClientSecret": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['keyvault_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/secrets/@{encodeURIComponent('Bookings-ClientSecret')}/value"
+                },
+                "runAfter": {
+                    "Set-ClientID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Get-FirstValues": {
+                "inputs": {
+                    "content": "@body('Parse-BookingResponse')?['value']",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "serviceId": {
+                                    "type": "string"
+                                },
+                                "serviceName": {
+                                    "type": "string"
+                                },
+                                "start": {
+                                    "properties": {
+                                        "dateTime": {
+                                            "type": "string"
+                                        },
+                                        "timeZone": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "serviceName",
+                                "serviceId",
+                                "start"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "runAfter": {
+                    "Parse-BookingResponse": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Get-TenantID": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['keyvault_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/secrets/@{encodeURIComponent('TenantID')}/value"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Get-UserPassword": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['keyvault_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/secrets/@{encodeURIComponent('UserPassword')}/value"
+                },
+                "runAfter": {
+                    "Set-UserName": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Get-Username": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['keyvault_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/secrets/@{encodeURIComponent('Username')}/value"
+                },
+                "runAfter": {
+                    "Set-TenantID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Initialize-BookingData": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "BookingData",
+                            "type": "object",
+                            "value": {
+                                "properties": {
+                                    "value": {
+                                        "items": {
+                                            "properties": {
+                                                "serviceId": {
+                                                    "type": "string"
+                                                },
+                                                "serviceName": {
+                                                    "type": "string"
+                                                },
+                                                "start": {
+                                                    "properties": {
+                                                        "dateTime": {
+                                                            "type": "string"
+                                                        },
+                                                        "timeZone": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "required": [
+                                                "serviceName",
+                                                "serviceId",
+                                                "start"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-arrBooking": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-BookingResults": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "BookingResults",
+                            "type": "string",
+                            "value": "@{variables('arrBooking')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Loop-Until-Call-NextLink-Is-Null": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-Nextlink": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "NextLink",
+                            "type": "string",
+                            "value": "@{body('Parse-BookingResponse')?['@odata.nextLink']} "
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Add-Each-To-arrBookings": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-arrBooking": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "arrBooking",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Parse-AccessKey": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize-intCount": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "intCount",
+                            "type": "integer",
+                            "value": 1
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize-Nextlink": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Loop-Until-Call-NextLink-Is-Null": {
+                "actions": {
+                    "Call-NextLink": {
+                        "inputs": {
+                            "headers": {
+                                "Authorization": "Bearer @{body('Parse-AccessToken2Response')?['access_token']}",
+                                "Host": "graph.microsoft.com"
+                            },
+                            "method": "GET",
+                            "uri": "@variables('NextLink')"
+                        },
+                        "runAfter": {
+                            "Parse-AccessToken2Response": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Http"
+                    },
+                    "For_each": {
+                        "actions": {
+                            "Append-arrBookings": {
+                                "inputs": {
+                                    "name": "arrBooking",
+                                    "value": "@items('For_each')"
+                                },
+                                "runAfter": {},
+                                "type": "AppendToArrayVariable"
+                            }
+                        },
+                        "foreach": "@body('Get-Values')",
+                        "runAfter": {
+                            "Get-Values": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Foreach"
+                    },
+                    "Get-AccessToken2": {
+                        "inputs": {
+                            "body": "grant_type=password\n&client_id= @{variables('ClientID')}\n&client_secret =@{variables('ClientSecret')}\n&scope=Bookings.ReadWrite.All BookingsAppointment.ReadWrite.All Bookings.Manage.All user.read\n&username = @{variables('UserName')}\n&password = @{variables('UserPassword')}\n\n\n",
+                            "headers": {
+                                "Host": "login.microsoftonline.com",
+                                "content-type": "application/x-www-form-urlencoded"
+                            },
+                            "method": "POST",
+                            "uri": "https://login.microsoftonline.com/@{variables('TenantID')}/oauth2/v2.0/token"
+                        },
+                        "runAfter": {},
+                        "type": "Http"
+                    },
+                    "Get-Values": {
+                        "inputs": {
+                            "content": "@body('Parse-NextLinkResponse')?['value']",
+                            "schema": {
+                                "items": {
+                                    "properties": {
+                                        "serviceId": {
+                                            "type": "string"
+                                        },
+                                        "serviceName": {
+                                            "type": "string"
+                                        },
+                                        "start": {
+                                            "properties": {
+                                                "dateTime": {
+                                                    "type": "string"
+                                                },
+                                                "timeZone": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "serviceName",
+                                        "serviceId",
+                                        "start"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "runAfter": {
+                            "Parse-NextLinkResponse": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Parse-AccessToken2Response": {
+                        "inputs": {
+                            "content": "@body('Get-AccessToken2')",
+                            "schema": {
+                                "properties": {
+                                    "access_token": {
+                                        "type": "string"
+                                    },
+                                    "expires_in": {
+                                        "type": "integer"
+                                    },
+                                    "ext_expires_in": {
+                                        "type": "integer"
+                                    },
+                                    "token_type": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "Get-AccessToken2": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Parse-NextLinkResponse": {
+                        "inputs": {
+                            "content": "@body('Call-NextLink')",
+                            "schema": {
+                                "properties": {
+                                    "@@odata.context": {
+                                        "type": "string"
+                                    },
+                                    "@@odata.nextLink": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "items": {
+                                            "properties": {
+                                                "serviceId": {
+                                                    "type": "string"
+                                                },
+                                                "serviceName": {
+                                                    "type": "string"
+                                                },
+                                                "start": {
+                                                    "properties": {
+                                                        "dateTime": {
+                                                            "type": "string"
+                                                        },
+                                                        "timeZone": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "required": [
+                                                "serviceName",
+                                                "serviceId",
+                                                "start"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "Call-NextLink": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Set-NextLink-For-Next-Loop-Iteration": {
+                        "inputs": {
+                            "name": "NextLink",
+                            "value": "@body('Parse-NextLinkResponse')?['@odata.nextLink']"
+                        },
+                        "runAfter": {
+                            "For_each": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Set-intCount": {
+                        "inputs": {
+                            "name": "intCount",
+                            "value": "@length(variables('NextLink'))"
+                        },
+                        "runAfter": {
+                            "Set-NextLink-For-Next-Loop-Iteration": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    }
+                },
+                "expression": "@equals(variables('intCount'), 0)",
+                "limit": {
+                    "count": 20,
+                    "timeout": "PT1H"
+                },
+                "runAfter": {
+                    "Initialize-intCount": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Until"
+            },
+            "Parse-AccessKey": {
+                "inputs": {
+                    "content": "@body('Get-AccessToken')",
+                    "schema": {
+                        "properties": {
+                            "access_token": {
+                                "type": "string"
+                            },
+                            "expires_in": {
+                                "type": "integer"
+                            },
+                            "ext_expires_in": {
+                                "type": "integer"
+                            },
+                            "token_type": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Get-AccessToken": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Parse-BookingResponse": {
+                "inputs": {
+                    "content": "@body('Call-Booking')",
+                    "schema": {
+                        "properties": {
+                            "@@odata.context": {
+                                "type": "string"
+                            },
+                            "@@odata.nextLink": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "items": {
+                                    "properties": {
+                                        "serviceId": {
+                                            "type": "string"
+                                        },
+                                        "serviceName": {
+                                            "type": "string"
+                                        },
+                                        "start": {
+                                            "properties": {
+                                                "dateTime": {
+                                                    "type": "string"
+                                                },
+                                                "timeZone": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "serviceName",
+                                        "serviceId",
+                                        "start"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Call-Booking": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Set-ClientID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "ClientID",
+                            "type": "string",
+                            "value": "@body('Get-ClientID')?['value']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get-ClientID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Set-ClientSecret": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "ClientSecret",
+                            "type": "string",
+                            "value": "@body('Get-ClientSecret')?['value']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get-ClientSecret": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Set-TenantID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "TenantID",
+                            "type": "string",
+                            "value": "@body('Get-TenantID')?['value']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get-TenantID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Set-UserName": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "UserName",
+                            "type": "string",
+                            "value": "@body('Get-Username')?['value']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get-Username": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Set-UserPassword": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "UserPassword",
+                            "type": "string",
+                            "value": "@body('Get-UserPassword')?['value']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get-UserPassword": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {}
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azureblob": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/azureblob-1",
+                    "connectionName": "azureblob-1",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azureblob"
+                },
+                "keyvault_1": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/keyvault-1",
+                    "connectionName": "keyvault-1",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/keyvault"
+                }
+            }
+        }
+    }
+}

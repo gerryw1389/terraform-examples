@@ -1,0 +1,354 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Create-File-In-Archive": {
+                        "inputs": {
+                            "body": "@body('Get-Content-Using-Path')",
+                            "headers": {
+                                "ReadFileMetadataFromServer": true
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azurefile_1']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/datasets/default/files",
+                            "queries": {
+                                "folderPath": "/exampleFileShare/archived",
+                                "name": "@{variables('strTime')}_{{csv-name}}.csv",
+                                "queryParametersSingleEncoded": true
+                            }
+                        },
+                        "runAfter": {
+                            "Create-File-In-Other-Storage": [
+                                "Succeeded"
+                            ]
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Create-File-In-Other-Storage": {
+                        "inputs": {
+                            "body": "@body('Get-Content-Using-Path')",
+                            "headers": {
+                                "ReadFileMetadataFromServer": true
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/datasets/default/files",
+                            "queries": {
+                                "folderPath": "{{some-file-storage-path}}/{{csv-name}}",
+                                "name": "@{variables('strTime')}-{{csv-name}}.csv",
+                                "queryParametersSingleEncoded": true
+                            }
+                        },
+                        "runAfter": {
+                            "Get-Content-Using-Path": [
+                                "Succeeded"
+                            ]
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Delete-Original": {
+                        "inputs": {
+                            "headers": {
+                                "SkipDeleteIfFileNotFoundOnServer": false
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azurefile_1']['connectionId']"
+                                }
+                            },
+                            "method": "delete",
+                            "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent('{{some-guid}}'))}"
+                        },
+                        "metadata": {
+                            "{{some-guid}}": "/exampleFileShare/{{csv-name}}.csv"
+                        },
+                        "runAfter": {
+                            "Create-File-In-Archive": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Get-Content-Using-Path": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azurefile_1']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/datasets/default/GetFileContentByPath",
+                            "queries": {
+                                "inferContentType": true,
+                                "path": "/exampleFileShare/{{csv-name}}.csv",
+                                "queryParametersSingleEncoded": true
+                            }
+                        },
+                        "runAfter": {
+                            "Send-Email": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Send-Email": {
+                        "inputs": {
+                            "body": {
+                                "Body": "<p>Example body - someone placed a file</p>",
+                                "Subject": "Example Subject",
+                                "To": "{{some-email-address}}"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['office365']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/v2/Mail"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Send_an_email_(V2)": {
+                            "inputs": {
+                                "body": {
+                                    "Body": "<p>Example body - someone did not place a file</p>",
+                                    "Subject": "Example Subject",
+                                    "To": "{{some-email-address}}"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/v2/Mail"
+                            },
+                            "runAfter": {},
+                            "type": "ApiConnection"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "contains": [
+                                "@variables('arrFiles')",
+                                "{{csv-name}}.csv"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each": {
+                "actions": {
+                    "Append_to_array_variable": {
+                        "inputs": {
+                            "name": "arrFiles",
+                            "value": "@items('For_each')?['Name']"
+                        },
+                        "runAfter": {
+                            "Set-strFileTime": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "AppendToArrayVariable"
+                    },
+                    "Set-strFileName": {
+                        "inputs": {
+                            "name": "strFileName",
+                            "value": "@items('For_each')?['Name']"
+                        },
+                        "runAfter": {},
+                        "type": "SetVariable"
+                    },
+                    "Set-strFileTime": {
+                        "inputs": {
+                            "name": "strFileTime",
+                            "value": "@items('For_each')?['LastModified']"
+                        },
+                        "runAfter": {
+                            "Set-strFileName": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    }
+                },
+                "foreach": "@body('List_files')?['value']",
+                "runAfter": {
+                    "arrFiles": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "List_files": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azurefile_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/default/foldersV2/@{encodeURIComponent(encodeURIComponent('{{some-guid}}'))}",
+                    "queries": {
+                        "nextPageMarker": "",
+                        "useFlatListing": false
+                    }
+                },
+                "metadata": {
+                    "{{some-guid}}": "/exampleFileShare"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "arrFiles": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "arrFiles",
+                            "type": "array",
+                            "value": [
+                                "value"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "strFileTime": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "strFileName": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strFileName",
+                            "type": "string",
+                            "value": "@{string('')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "strTime": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "strFileTime": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strFileTime",
+                            "type": "string",
+                            "value": "@{string('')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "strFileName": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "strTime": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "strTime",
+                            "type": "string",
+                            "value": "@{utcNow('yyyy-MM-dd-HH-mm-ss')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "List_files": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Recurrence": {
+                "recurrence": {
+                    "frequency": "Day",
+                    "interval": 1,
+                    "schedule": {
+                        "hours": [
+                            "12"
+                        ],
+                        "minutes": [
+                            15
+                        ]
+                    },
+                    "timeZone": "Central Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azurefile": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/azurefile-2",
+                    "connectionName": "azurefile-2",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azurefile"
+                },
+                "azurefile_1": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/azurefile-1",
+                    "connectionName": "azurefile-1",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/azurefile"
+                },
+                "office365": {
+                    "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{{some-resource-group}}/providers/Microsoft.Web/connections/office365",
+                    "connectionName": "office365",
+                    "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/southcentralus/managedApis/office365"
+                }
+            }
+        }
+    }
+}
