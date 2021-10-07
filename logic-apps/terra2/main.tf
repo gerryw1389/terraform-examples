@@ -51,7 +51,7 @@ data "template_file" "workflow" {
 
 # Deploy the ARM template workflow
 resource "azurerm_resource_group_template_deployment" "workflow" {
-   name                 = "la_deployment_${formatdate("YYYY-MM-DD-hh-mm-ss", timestamp())}"
+   name                 = "la_deployment_${formatdate("YYMMDDhhmmss", timestamp())}"
    resource_group_name  = azurerm_resource_group.azurerg.name
    
    deployment_mode      = "Incremental"

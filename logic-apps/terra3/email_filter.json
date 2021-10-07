@@ -1,0 +1,374 @@
+{
+   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+   "contentVersion": "1.0.0.0",
+   "parameters": {
+      "workflow_name": {
+         "defaultValue": "email_filter",
+         "type": "string"
+      }
+   },
+   "variables": {},
+   "resources": [
+      {
+         "type": "Microsoft.Logic/workflows",
+         "apiVersion": "2017-07-01",
+         "name": "[parameters('workflow_name')]",
+         "location": "southcentralus",
+         "tags": {
+            "Admin_Description": "From my email account, this will add a specific attachment to Automation storage account.",
+            "Contact": "example@email.com",
+            "Cost Center": "3132708",
+            "Custom_Logging": "true",
+            "Department Code": "340607086",
+            "Type": "Check EMail"
+         },
+         "properties": {
+            "state": "Enabled",
+            "definition": {
+               "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+               "actions": {
+                  "Condition": {
+                     "actions": {
+                        "Send_Data": {
+                           "inputs": {
+                              "body": "@variables('payload')",
+                              "headers": {
+                                 "Log-Type": "LogicApps"
+                              },
+                              "host": {
+                                 "connection": {
+                                    "name": "@parameters('$connections')['azureloganalyticsdatacollector']['connectionId']"
+                                 }
+                              },
+                              "method": "post",
+                              "path": "/api/logs"
+                           },
+                           "runAfter": {
+                              "Set-Payload": [
+                                 "Succeeded"
+                              ]
+                           },
+                           "type": "ApiConnection"
+                        },
+                        "Set-Payload": {
+                           "inputs": {
+                              "name": "payload",
+                              "value": "{\n \"logic_app_name\": \"email_filter\",\n\"description\": \"email_filter\",\n \"logic_app_run_id\": \"@{variables('LogicAppRunID')}\",\n \"status\": \"Completed\",\n \"step_end\": \"@{variables('strStepEnd')}\",\n \"step_number\": \"01\",\n \"step_start\": \"@{variables('strStepStart')}\"\n}"
+                           },
+                           "runAfter": {
+                              "Set-strStepEnd": [
+                                 "Succeeded"
+                              ]
+                           },
+                           "type": "SetVariable"
+                        },
+                        "Set-strStepEnd": {
+                           "inputs": {
+                              "name": "strStepEnd",
+                              "value": "@{convertTimeZone(utcnow(),'UTC','Central Standard Time')}"
+                           },
+                           "runAfter": {},
+                           "type": "SetVariable"
+                        },
+                        "Terminate": {
+                           "inputs": {
+                              "runStatus": "Cancelled"
+                           },
+                           "runAfter": {
+                              "Send_Data": [
+                                 "Succeeded"
+                              ]
+                           },
+                           "type": "Terminate"
+                        }
+                     },
+                     "expression": {
+                        "and": [
+                           {
+                              "equals": [
+                                 "@variables('strSubject')",
+                                 "SOMETHING UNIQUE 2"
+                              ]
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-Payload": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "If"
+                  },
+                  "Delay": {
+                     "inputs": {
+                        "interval": {
+                           "count": 1,
+                           "unit": "Minute"
+                        }
+                     },
+                     "runAfter": {
+                        "Condition": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "Wait"
+                  },
+                  "For_each": {
+                     "actions": {
+                        "Create_file": {
+                           "inputs": {
+                              "body": "@base64ToBinary(items('For_each')?['contentBytes'])",
+                              "headers": {
+                                 "ReadFileMetadataFromServer": true
+                              },
+                              "host": {
+                                 "connection": {
+                                    "name": "@parameters('$connections')['azurefile']['connectionId']"
+                                 }
+                              },
+                              "method": "post",
+                              "path": "/datasets/default/files",
+                              "queries": {
+                                 "folderPath": "/logic-apps",
+                                 "name": "unique-values.csv",
+                                 "queryParametersSingleEncoded": true
+                              }
+                           },
+                           "runAfter": {},
+                           "runtimeConfiguration": {
+                              "contentTransfer": {
+                                 "transferMode": "Chunked"
+                              }
+                           },
+                           "type": "ApiConnection"
+                        }
+                     },
+                     "foreach": "@triggerBody()?['attachments']",
+                     "runAfter": {
+                        "Delay": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "Foreach"
+                  },
+                  "Initialize-LogicAppRunID": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "LogicAppRunID",
+                              "type": "string",
+                              "value": "@{guid('N')}"
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-strName": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "InitializeVariable"
+                  },
+                  "Initialize-Payload": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "payload",
+                              "type": "string"
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-strStepEnd": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "InitializeVariable"
+                  },
+                  "Initialize-strName": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "strName",
+                              "type": "string",
+                              "value": "gerry"
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-strSubject": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "InitializeVariable"
+                  },
+                  "Initialize-strStepEnd": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "strStepEnd",
+                              "type": "string"
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-strStepStart": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "InitializeVariable"
+                  },
+                  "Initialize-strStepStart": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "strStepStart",
+                              "type": "string",
+                              "value": "@{convertTimeZone(utcnow(),'UTC','Central Standard Time')}"
+                           }
+                        ]
+                     },
+                     "runAfter": {
+                        "Initialize-LogicAppRunID": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "InitializeVariable"
+                  },
+                  "Initialize-strSubject": {
+                     "inputs": {
+                        "variables": [
+                           {
+                              "name": "strSubject",
+                              "type": "string",
+                              "value": "@triggerBody()?['subject']"
+                           }
+                        ]
+                     },
+                     "runAfter": {},
+                     "type": "InitializeVariable"
+                  },
+                  "Send-Data-Success": {
+                     "inputs": {
+                        "body": "@variables('payload')",
+                        "headers": {
+                           "Log-Type": "LogicApps"
+                        },
+                        "host": {
+                           "connection": {
+                              "name": "@parameters('$connections')['azureloganalyticsdatacollector']['connectionId']"
+                           }
+                        },
+                        "method": "post",
+                        "path": "/api/logs"
+                     },
+                     "runAfter": {
+                        "Set-Payload-2": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "ApiConnection"
+                  },
+                  "Set-Payload-2": {
+                     "inputs": {
+                        "name": "payload",
+                        "value": "{\n \"logic_app_name\": \"email_filter\",\n\"description\": \"email_filter\",\n \"logic_app_run_id\": \"@{variables('LogicAppRunID')}\",\n \"status\": \"Completed\",\n \"step_end\": \"@{variables('strStepEnd')}\",\n \"step_number\": \"02\",\n \"step_start\": \"@{variables('strStepStart')}\"\n}"
+                     },
+                     "runAfter": {
+                        "Set-strStepEnd-2": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "SetVariable"
+                  },
+                  "Set-strStepEnd-2": {
+                     "inputs": {
+                        "name": "strStepEnd",
+                        "value": "@{convertTimeZone(utcnow(),'UTC','Central Standard Time')}"
+                     },
+                     "runAfter": {
+                        "For_each": [
+                           "Succeeded"
+                        ]
+                     },
+                     "type": "SetVariable"
+                  }
+               },
+               "contentVersion": "1.0.0.0",
+               "outputs": {},
+               "parameters": {
+                  "$connections": {
+                     "defaultValue": {},
+                     "type": "Object"
+                  }
+               },
+               "triggers": {
+                  "When_a_new_email_arrives_(V3)": {
+                     "inputs": {
+                        "fetch": {
+                           "method": "get",
+                           "pathTemplate": {
+                              "template": "/v3/Mail/OnNewEmail"
+                           },
+                           "queries": {
+                              "fetchOnlyWithAttachment": true,
+                              "folderPath": "Inbox",
+                              "importance": "Any",
+                              "includeAttachments": true,
+                              "subjectFilter": "SOMETHING UNIQUE"
+                           }
+                        },
+                        "host": {
+                           "connection": {
+                              "name": "@parameters('$connections')['office365']['connectionId']"
+                           }
+                        },
+                        "subscribe": {
+                           "body": {
+                              "NotificationUrl": "@{listCallbackUrl()}"
+                           },
+                           "method": "post",
+                           "pathTemplate": {
+                              "template": "/GraphMailSubscriptionPoke/$subscriptions"
+                           },
+                           "queries": {
+                              "fetchOnlyWithAttachment": true,
+                              "folderPath": "Inbox",
+                              "importance": "Any"
+                           }
+                        }
+                     },
+                     "runtimeConfiguration": {
+                        "concurrency": {
+                           "runs": 1
+                        }
+                     },
+                     "splitOn": "@triggerBody()?['value']",
+                     "type": "ApiConnectionNotification"
+                  }
+               }
+            },
+            "parameters": {
+               "$connections": {
+                  "value": {
+                     "azurefile": {
+                        "connectionId": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/resourceGroups/logic-apps/providers/Microsoft.Web/connections/azurefile",
+                        "connectionName": "azurefile",
+                        "id": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/providers/Microsoft.Web/locations/southcentralus/managedApis/azurefile"
+                     },
+                     "azureloganalyticsdatacollector": {
+                        "connectionId": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/resourceGroups/logic-apps/providers/Microsoft.Web/connections/azureloganalyticsdatacollector",
+                        "connectionName": "azureloganalyticsdatacollector",
+                        "id": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/providers/Microsoft.Web/locations/southcentralus/managedApis/azureloganalyticsdatacollector"
+                     },
+                     "office365": {
+                        "connectionId": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/resourceGroups/logic-apps/providers/Microsoft.Web/connections/office365",
+                        "connectionName": "office365",
+                        "id": "/subscriptions/700b8c1a-701c-4d49-b283-5718830ef8a2/providers/Microsoft.Web/locations/southcentralus/managedApis/office365"
+                     }
+                  }
+               }
+            }
+         }
+      }
+   ]
+}
