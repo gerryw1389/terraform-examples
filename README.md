@@ -1,4 +1,4 @@
-### Terraform
+### Terraform Examples
 
 This repo will house terraform code that can be used freely (sanitized). Also, many of the examples have articles that go with them from my blog at [https://automationadmin.com](https://automationadmin.com).
 
