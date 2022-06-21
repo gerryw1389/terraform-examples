@@ -1,0 +1,57 @@
+trigger:
+  - none
+
+stages:
+- stage: ResourceGroup_Build
+  jobs: 
+  - job:
+    workspace:
+      clean: all 
+    timeoutInMinutes: 0
+    cancelTimeoutInMinutes: 0
+    displayName: 'ResourceGroup_Build'
+    pool:
+      vmImage: 'ubuntu-latest'
+    variables:
+      - group: Pipeline_Secrets
+    steps:
+      - checkout: self  
+      
+      - task: CopyFiles@2
+        displayName: 'Copy Deploy Folder'
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/Deploy
+          Contents: "*"
+          TargetFolder: $(Build.SourcesDirectory)
+         
+      - script: 'terraform init -backend-config="access_key=$(tfstateaccesskey)"'
+        displayName: 'terraform init'
+
+      - script: 'terraform validate'
+        displayName: 'terraform validate' 
+      
+      - script: |
+          set TF_LOG=ERROR
+          set TF_LOG_PATH=$(Build.ArtifactStagingDirectory)\crash.log
+          set
+          terraform plan \
+          -var="subscription_id=$(subscription-id)" \
+          -var="tenant_id=$(tenant-id)" \
+          -var="client_id=$(az-tf-client-id)" \
+          -var="client_secret=$(az-tf-client-secret)" \
+          -out "tf.plan"
+        displayName: 'terraform plan'
+
+      - task: PublishBuildArtifacts@1
+        condition: always()
+        displayName: 'Save Error Log to $(Build.ArtifactStagingDirectory) if available'
+        inputs:
+          pathToPublish: '$(Build.ArtifactStagingDirectory)' 
+          artifactName: 'traces_resourcegroup'    
+
+      - task: DeleteFiles@1
+        condition: always()
+        displayName: 'Delete files from $(Build.SourcesDirectory)'
+        inputs:
+          SourceFolder: '$(Build.SourcesDirectory)'
+          Contents: '*'
