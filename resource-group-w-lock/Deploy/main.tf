@@ -15,3 +15,10 @@ module "azure_learning_rg" {
   location            = var.region
   tags                = local.sbx_tags
 }
+
+resource "azurerm_management_lock" "resource-group-level" {
+  name       = "BlockDelete"
+  scope      = module.azure_learning_rg.res_out_rg_id
+  lock_level = "CanNotDelete"
+  notes      = "Protect against accidental deletion"
+}
