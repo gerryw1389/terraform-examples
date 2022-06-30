@@ -46,7 +46,7 @@ locals {
 ###################### < Resources > ######################
 
 module "azure_learning_rg" {
-  source              = "./Modules/ResourceGroup"
+  source              = "./modules/resource_group"
   resource_group_name = "aa-${var.env_stage_abbr}-${var.region_abbr}-test"
   location            = var.region
   tags                = local.sbx_tags
