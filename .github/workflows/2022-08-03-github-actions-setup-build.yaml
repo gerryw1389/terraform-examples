@@ -30,7 +30,7 @@ jobs:
       - name: Terraform Init
         id: init
         run: 
-          cd ./2022-08-03-github-actions-setup
+          cd ./2022-08-03-github-actions-setup \
           terraform init
 
       - name: Terraform Validate
@@ -41,7 +41,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: 
-          cd ./2022-08-03-github-actions-setup
+          cd ./2022-08-03-github-actions-setup \
           terraform plan \
             -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
             -var="tenant_id=$ARM_TENANT_ID" \
