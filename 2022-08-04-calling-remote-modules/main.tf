@@ -46,7 +46,7 @@ locals {
 ###################### < Resources > ######################
 
 module "azure_learning_rg" {
-  source              = "git::https://github.com/gerryw1389/terraform-modules/tree/v1.0.0/resource-group"
+  source              = "git::https://github.com/gerryw1389/terraform-modules.git//resource-group?ref=v1.0.0"
   resource_group_name = "aa-${var.env_stage_abbr}-${var.region_abbr}-test-remote"
   location            = var.region
   tags                = local.sbx_tags
