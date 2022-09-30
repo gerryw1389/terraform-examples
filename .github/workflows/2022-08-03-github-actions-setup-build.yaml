@@ -40,10 +40,5 @@ jobs:
         uses: hashicorp/terraform-github-actions@master
         with:
           tf_actions_version: 0.14.8
-          tf_actions_subcommand: 'plan \
-            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
-            -var="tenant_id=$ARM_TENANT_ID" \
-            -var="client_id=$ARM_CLIENT_ID" \
-            -var="client_secret=$ARM_CLIENT_SECRET" \
-            -out "tf.plan"'
+          tf_actions_subcommand: 'plan -var="subscription_id=$ARM_SUBSCRIPTION_ID" -var="tenant_id=$ARM_TENANT_ID" -var="client_id=$ARM_CLIENT_ID" -var="client_secret=$ARM_CLIENT_SECRET" -out "tf.plan"'
           tf_actions_working_dir: "./2022-08-03-github-actions-setup"
