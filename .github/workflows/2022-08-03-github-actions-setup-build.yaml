@@ -21,24 +21,31 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
-        
-      - name: 'Terraform Init'
-        uses: hashicorp/terraform-github-actions@master
-        with:
-          tf_actions_version: 0.14.8
-          tf_actions_subcommand: 'init'
-          tf_actions_working_dir: "./2022-08-03-github-actions-setup"
 
-      - name: 'Terraform Validate'
-        uses: hashicorp/terraform-github-actions@master
+      - name: Download Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          tf_actions_version: 0.14.8
-          tf_actions_subcommand: 'validate'
-          tf_actions_working_dir: "./2022-08-03-github-actions-setup"
-          
-      - name: 'Terraform Plan'
-        uses: hashicorp/terraform-github-actions@master
-        with:
-          tf_actions_version: 0.14.8
-          tf_actions_subcommand: 'plan -var="subscription_id=$ARM_SUBSCRIPTION_ID" -var="tenant_id=$ARM_TENANT_ID" -var="client_id=$ARM_CLIENT_ID" -var="client_secret=$ARM_CLIENT_SECRET" -out "tf.plan"'
-          tf_actions_working_dir: "./2022-08-03-github-actions-setup"
+          terraform_version: 1.1.7
+
+      - name: Terraform Init
+        id: init
+        run: 
+          cd ./2022-08-03-github-actions-setup
+          terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: 
+          terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: 
+          cd ./2022-08-03-github-actions-setup
+          terraform plan \
+            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+            -var="tenant_id=$ARM_TENANT_ID" \
+            -var="client_id=$ARM_CLIENT_ID" \
+            -var="client_secret=$ARM_CLIENT_SECRET" \
+            -out "tf.plan"
+        continue-on-error: false
