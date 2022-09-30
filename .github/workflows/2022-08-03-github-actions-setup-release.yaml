@@ -24,9 +24,11 @@ jobs:
       - name: 'Terraform plan'
         id: plan
         run: |
-          terraform plan
-      
+          cd ./2022-08-03-github-actions-setup
+          terraform plan -out="tf.plan"
+                
       - name: 'Terraform apply'
         id: apply
         run: |
-          terraform apply -auto-approve
+          cd ./2022-08-03-github-actions-setup
+          terraform apply -auto-approve -input=false ./tf.plan

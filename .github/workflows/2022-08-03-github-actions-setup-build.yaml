@@ -24,4 +24,5 @@ jobs:
       - name: 'Terraform plan'
         id: plan
         run: |
-          terraform plan
+          cd ./2022-08-03-github-actions-setup
+          terraform plan -out="tf.plan"
