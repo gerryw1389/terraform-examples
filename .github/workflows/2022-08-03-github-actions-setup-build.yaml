@@ -1,9 +1,5 @@
 
 on:
-  push:
-    branches:
-      - main
-      
   workflow_dispatch:
 
 jobs:
@@ -22,14 +18,10 @@ jobs:
       - name: 'Terraform init'
         id: init
         run: |
+          cd ./2022-08-03-github-actions-setup
           terraform init
       
       - name: 'Terraform plan'
         id: plan
         run: |
           terraform plan
-      
-      - name: 'Terraform apply'
-        id: apply
-        run: |
-          terraform apply -auto-approve
