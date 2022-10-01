@@ -47,6 +47,7 @@ jobs:
             -var="tenant_id=$ARM_TENANT_ID" \
             -var="client_id=$ARM_CLIENT_ID" \
             -var="client_secret=$ARM_CLIENT_SECRET" \
+            -var="region=eastus" \
             -out "tf.plan"
         continue-on-error: false
 
