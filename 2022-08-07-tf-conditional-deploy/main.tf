@@ -54,8 +54,9 @@ module "azure_learning_rg" {
 }
 
 resource "azurerm_management_lock" "resource-group-level" {
+  count = var.region == "southcentralus" ? 1 : 0
   name       = "BlockDelete"
-  scope      = module.azure_learning_rg.res_out_rg_id
+  scope      = module.azure_learning_rg[count.index].res_out_rg_id
   lock_level = "CanNotDelete"
   notes      = "Protect against accidental deletion"
 }
