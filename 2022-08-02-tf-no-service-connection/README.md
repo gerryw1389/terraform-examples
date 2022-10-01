@@ -1,4 +1,4 @@
 
-### Goal:
+### Notes
 
-Basic TF repo with [Repo Structure](https://www.terraform.io/language/modules/develop/structure) that does not use a Service Connection in Azure Devops.
+See associated post [here](https://automationadmin.com/2022/08/2022-08-02-tf-no-service-connection).

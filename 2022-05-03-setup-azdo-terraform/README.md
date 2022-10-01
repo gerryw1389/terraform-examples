@@ -1,4 +1,4 @@
 
-### Goal:
+### Notes
 
-Basic TF repo
+See associated post [here](https://automationadmin.com/2022/05/setup-azdo-terraform/).

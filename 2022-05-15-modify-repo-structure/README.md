@@ -1,4 +1,4 @@
 
-### Goal:
+### Notes
 
-Basic TF repo with [Repo Structure](https://www.terraform.io/language/modules/develop/structure)
+See associated post [here](https://automationadmin.com/2022/05/modify-repo-structure).
