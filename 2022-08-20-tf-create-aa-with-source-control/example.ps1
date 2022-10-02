@@ -1,69 +1,18 @@
 
-
-# Authenticate to Azure
-
-
+##############
+# Authenticate to Azure: https://learn.microsoft.com/en-us/azure/automation/enable-managed-identity-for-automation#authenticate-access-with-system-assigned-managed-identity
+##############
 Write-Output "Starting Runbook..."
+# Ensures you do not inherit an AzContext in your runbook
+Disable-AzContextAutosave -Scope Process
 
-[string] $FailureMessage = "Failed to execute the command"
-[int] $RetryCount = 3 
-[int] $TimeoutInSecs = 20
-$RetryFlag = $true
-$Attempt = 1
+# Connect to Azure with system-assigned managed identity
+$AzureContext = (Connect-AzAccount -Identity).context
 
-do
-{
-   $connectionName = "AzureRunAsConnection"
-   try
-   {
-      Write-Output "Logging into Azure subscription using Az cmdlets..."
-      
-      # Get the connection "AzureRunAsConnection "
-      $servicePrincipalConnection = Get-AutomationConnection -Name $connectionName         
-
-      $AzureContext = Add-AzAccount `
-         -ServicePrincipal `
-         -TenantId $servicePrincipalConnection.TenantId `
-         -ApplicationId $servicePrincipalConnection.ApplicationId `
-         -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint 
-        
-      Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
-
-      $RetryFlag = $false
-   }
-   catch 
-   {
-      if (!$servicePrincipalConnection)
-      {
-         $ErrorMessage = "Connection $connectionName not found."
-
-         $RetryFlag = $false
-
-         throw $ErrorMessage
-      }
-
-      if ($Attempt -gt $RetryCount) 
-      {
-         Write-Output "$FailureMessage! Total retry attempts: $RetryCount"
-
-         Write-Output "[Error Message] $($_.exception.message) `n"
-
-         $RetryFlag = $false
-      }
-      else 
-      {
-         Write-Output "[$Attempt/$RetryCount] $FailureMessage. Retrying in $TimeoutInSecs seconds..."
-
-         Start-Sleep -Seconds $TimeoutInSecs
-
-         $Attempt = $Attempt + 1
-      }   
-   }
-}
-while ($RetryFlag)
-
-Write-Output "Current Context: $($AzureContext.Subscription)"
+# set and store context
 $AzureContext = Set-AzContext -SubscriptionName $AzureContext.Subscription -DefaultProfile $AzureContext
+Write-Output "Successfully authenticated and logged in using Automation Accounts System Identity"
+##############
 
 $VMObjects = Get-AZVM -DefaultProfile $CurrentContext
 
