@@ -5,8 +5,8 @@ resource "azurerm_automation_schedule" "monday_tuesday" {
   automation_account_name = azurerm_automation_account.aa.name
   frequency               = "Week"
   interval                = 1
-  timezone                = "America/Los_Angeles"
-  start_time              = "2022-08-01T16:05:16-07:00"
+  timezone                = "America/Chicago"
+  start_time              = "2022-10-05T16:05:16-07:00"
   description             = "Production schedule"
   week_days               = ["Monday", "Tuesday"]
 }
@@ -17,8 +17,8 @@ resource "azurerm_automation_schedule" "wednes_thurs" {
   automation_account_name = azurerm_automation_account.aa.name
   frequency               = "Week"
   interval                = 1
-  timezone                = "America/Los_Angeles"
-  start_time              = "2022-08-01T16:05:16-07:00"
+  timezone                = "America/Chicago"
+  start_time              = "2022-10-05T16:05:16-07:00"
   description             = "Production schedule"
-  week_days               = ["Monday", "Tuesday"]
+  week_days               = ["Wednesday", "Thursday"]
 }
