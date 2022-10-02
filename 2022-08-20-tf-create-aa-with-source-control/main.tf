@@ -102,7 +102,7 @@ resource "azurerm_automation_account" "aa" {
 resource "azurerm_role_assignment" "example" {
   scope                = data.azurerm_subscription.primary.id
   role_definition_name = "Reader"
-  principal_id         = azurerm_automation_account.aa.id
+  principal_id         = azurerm_automation_account.aa.identity[0].principal_id
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
