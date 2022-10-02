@@ -55,5 +55,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           cd ./2022-08-20-tf-create-aa-with-source-control
-          terraform apply -auto-approve -input=false -destroy ./tf.plan
+          terraform apply -destroy
         continue-on-error: false
