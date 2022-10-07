@@ -1,13 +1,29 @@
 
-###################### < Providers > ######################
+# ---------------------------------------------------------------------------------------------------------------------
+# Purpose: Deploy A Powershell7 FunctionApp
+# Copyright: Gerry Williams (https://automationadmin.com)
+# License: MIT License (https://opensource.org/licenses/mit)
+
+# vscode Region expansion keyboard shortcuts
+# Ctrl+Shift+[    Fold (collapse) region  editor.fold
+# Ctrl+Shift+]    Unfold (uncollapse) region  editor.unfold
+# Ctrl+K Ctrl+[   Fold (collapse) all subregions  editor.foldRecursively
+# Ctrl+K Ctrl+]   Unfold (uncollapse) all subregions  editor.unfoldRecursively
+# Ctrl+K Ctrl+0   Fold (collapse) all regions editor.foldAll
+# Ctrl+K Ctrl+J   Unfold (uncollapse) all regions
+# ---------------------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------------
+#region Providers
+# ---------------------------------------------------------------------------------------------------------------------
 
 terraform {
 
   backend "azurerm" {
     resource_group_name  = "tx-storage-rg"
     storage_account_name = "automationadminstorage"
-    container_name       = "tfstatesbx"
-    key                  = "learning_rg"
+    container_name       = "tfstate"
+    key                  = "prodtfstate"
   }
 
   required_providers {
@@ -17,7 +33,7 @@ terraform {
     }
   }
 
-  required_version = "1.2.0"
+  required_version = "~>1.2.0"
 }
 
 provider "azurerm" {
@@ -29,16 +45,21 @@ provider "azurerm" {
   features {}
 }
 
-###################### < /Providers > ######################
-###################### < Locals > ######################
+# ---------------------------------------------------------------------------------------------------------------------
+#endregion Providers
+# ---------------------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------------
+#region Locals
+# ---------------------------------------------------------------------------------------------------------------------
 
 locals {
   aa_tags = {
-    Owner      = "Automation Admin"
-    CostCenter = "100"
-    EntAppname = "Automation Admin Terraform POC"
-    Appenv     = var.env_stage
-    Apppoc     = "gerry@automationadmin.com"
+    Owner       = "Automation Admin"
+    CostCenter  = "100"
+    Description = "Automation Admin Terraform POC"
+    Environment = var.environment
+    App_Contact = "gerry@automationadmin.com"
   }
 }
 
