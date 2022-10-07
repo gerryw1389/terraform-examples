@@ -1,6 +1,6 @@
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Purpose: Deploy an automation account
+# Purpose: Deploy an Automation Account
 # Copyright: AutomationAdmin.com
 
 # vscode Region expansion keyboard shortcuts

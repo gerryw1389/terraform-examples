@@ -63,67 +63,74 @@ locals {
   }
 }
 
-###################### < /Locals > ######################
-###################### < Resources > ######################
+# ---------------------------------------------------------------------------------------------------------------------
+#endregion Locals
+# ---------------------------------------------------------------------------------------------------------------------
 
-# resource "azurerm_resource_group" "fa_rg" {
-#   name     = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
-#   location = var.region
-#   tags     = local.aa_tags
-# }
+# ---------------------------------------------------------------------------------------------------------------------
+#region Resources
+# ---------------------------------------------------------------------------------------------------------------------
 
-# resource "azurerm_storage_account" "fa_sa" {
-#   name                     = "aa${var.env_stage_abbr}${var.region_abbr}sa"
-#   resource_group_name      = azurerm_resource_group.fa_rg.name
-#   location                 = azurerm_resource_group.fa_rg.location
-#   account_tier             = "Standard"
-#   account_replication_type = "LRS"
-#   tags                     = local.aa_tags
-# }
+resource "azurerm_resource_group" "fa_rg" {
+  name     = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
+  location = var.region
+  tags     = local.aa_tags
+}
 
-# resource "azurerm_service_plan" "fa_plan" {
-#   name                = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa-plan"
-#   resource_group_name = azurerm_resource_group.fa_rg.name
-#   location            = azurerm_resource_group.fa_rg.location
-#   os_type             = "Windows"
-#   sku_name            = "Y1"
-#   tags                = local.aa_tags
-# }
+resource "azurerm_storage_account" "fa_sa" {
+  name                     = "aa${var.env_stage_abbr}${var.region_abbr}sa"
+  resource_group_name      = azurerm_resource_group.fa_rg.name
+  location                 = azurerm_resource_group.fa_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  tags                     = local.aa_tags
+}
 
-# resource "azurerm_windows_function_app" "fa" {
-#   name                        = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
-#   location                    = azurerm_resource_group.fa_rg.location
-#   resource_group_name         = azurerm_resource_group.fa_rg.name
-#   service_plan_id             = azurerm_service_plan.fa_plan.id
-#   storage_account_name        = azurerm_storage_account.fa_sa.name
-#   storage_account_access_key  = azurerm_storage_account.fa_sa.primary_access_key
-#   functions_extension_version = "~4"
-#   https_only                  = true
-#   tags                        = local.aa_tags
+resource "azurerm_service_plan" "fa_plan" {
+  name                = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa-plan"
+  resource_group_name = azurerm_resource_group.fa_rg.name
+  location            = azurerm_resource_group.fa_rg.location
+  os_type             = "Windows"
+  sku_name            = "Y1"
+  tags                = local.aa_tags
+}
 
-#   auth_settings {
-#     enabled                       = false
-#     runtime_version               = "~1"
-#     unauthenticated_client_action = "AllowAnonymous"
-#   }
+resource "azurerm_windows_function_app" "fa" {
+  name                        = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
+  location                    = azurerm_resource_group.fa_rg.location
+  resource_group_name         = azurerm_resource_group.fa_rg.name
+  service_plan_id             = azurerm_service_plan.fa_plan.id
+  storage_account_name        = azurerm_storage_account.fa_sa.name
+  storage_account_access_key  = azurerm_storage_account.fa_sa.primary_access_key
+  functions_extension_version = "~4"
+  https_only                  = true
+  tags                        = local.aa_tags
 
-#   identity {
-#     type = "SystemAssigned"
-#   }
+  auth_settings {
+    enabled                       = false
+    runtime_version               = "~1"
+    unauthenticated_client_action = "AllowAnonymous"
+  }
 
-#   site_config {
-#     minimum_tls_version = "1.2"
-#     application_stack {
-#       powershell_core_version = "7"
-#     }
-#   }
-# }
+  identity {
+    type = "SystemAssigned"
+  }
 
-# resource "azurerm_app_service_source_control" "fa_sc" {
-#   app_id                 = azurerm_windows_function_app.fa.id
-#   repo_url               = "https://github.com/gerryw1389/PS-FindNextCIDRRange"
-#   branch                 = "main"
-#   use_manual_integration = true
-# }
+  site_config {
+    minimum_tls_version = "1.2"
+    application_stack {
+      powershell_core_version = "7"
+    }
+  }
+}
 
-###################### < /Resources > ######################
+resource "azurerm_app_service_source_control" "fa_sc" {
+  app_id                 = azurerm_windows_function_app.fa.id
+  repo_url               = "https://github.com/gerryw1389/PS-FindNextCIDRRange"
+  branch                 = "main"
+  use_manual_integration = true
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+#endregion Resources
+# ---------------------------------------------------------------------------------------------------------------------
