@@ -58,7 +58,7 @@ locals {
       Owner        = "Automation Admin"
       CostCenter   = "100"
       Description  = "Automation Admin Terraform POC"
-      Environment  = var.environment
+      Environment  = var.env_stage_abbr
       App_Contact  = "gerry@automationadmin.com"
    }
 }

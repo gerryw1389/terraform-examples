@@ -1,4 +1,3 @@
-
 # See https://www.terraform.io/language/modules/develop/structure where they recommend to follow the Consul module => https://github.com/hashicorp/terraform-azurerm-consul/blob/master/vars.tf
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -30,21 +29,22 @@ variable "client_secret" {
 # These parameters have reasonable defaults.
 # ---------------------------------------------------------------------------------------------------------------------
 
-variable "environment" {
-  description = "(Optional) The environment stage. Example: prod, qa, dev."
+variable "env_stage" {
+  description = "(Optional) The environment stage. Example: development, qa, or production."
   type        = string
-  default     = "prod"
+  default     = "development"
+}
+
+variable "env_stage_abbr" {
+  description = "(Optional) The environment stage abbreviation. Example: dev, qa, or prd."
+  type        = string
+  default     = "dev"
 }
 
 variable "region" {
   description = "(Optional) The name of the region. Example: southcentralus."
   type        = string
   default     = "southcentralus"
-
-  validation {
-    condition     = var.region == "westus" || var.region == "eastus" || var.region == "southcentralus"
-    error_message = "The region must be westus, eastus, or southcentralus."
-  }
 }
 
 variable "region_abbr" {

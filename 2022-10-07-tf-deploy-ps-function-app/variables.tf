@@ -1,3 +1,8 @@
+# See https://www.terraform.io/language/modules/develop/structure where they recommend to follow the Consul module => https://github.com/hashicorp/terraform-azurerm-consul/blob/master/vars.tf
+
+# ---------------------------------------------------------------------------------------------------------------------
+# REQUIRED PARAMETERS
+# ---------------------------------------------------------------------------------------------------------------------
 
 variable "tenant_id" {
   description = "(Required) Service Principal AD Tenant ID - Azure AD for terraform authentication."
@@ -19,6 +24,11 @@ variable "client_secret" {
   type        = string
 }
 
+# ---------------------------------------------------------------------------------------------------------------------
+# OPTIONAL PARAMETERS
+# These parameters have reasonable defaults.
+# ---------------------------------------------------------------------------------------------------------------------
+
 variable "env_stage" {
   description = "(Optional) The environment stage. Example: development, qa, or production."
   type        = string
@@ -38,7 +48,7 @@ variable "region" {
 }
 
 variable "region_abbr" {
-  description = "(Optional) The region abbreviation. Example: wus"
+  description = "(Optional) The region abbreviation. Example: wus, eus, scus"
   type        = string
-  default     = "tx"
+  default     = "scus"
 }

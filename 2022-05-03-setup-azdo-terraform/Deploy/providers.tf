@@ -4,8 +4,8 @@ terraform {
   backend "azurerm" {
     resource_group_name  = "tx-storage-rg"
     storage_account_name = "automationadminstorage"
-    container_name       = "tfstatesbx"
-    key                  = "learning_rg"
+    container_name       = "tfstate"
+    key                  = "prodtfstate"
   }
 
   required_providers {
