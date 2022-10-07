@@ -66,17 +66,16 @@ locals {
 ###################### < /Locals > ######################
 ###################### < Resources > ######################
 
-module "rg" {
-  source              = "git::https://github.com/gerryw1389/terraform-modules.git//resource-group?ref=v1.0.0"
-  resource_group_name = "aa-${var.env_stage_abbr}-${var.region_abbr}-functionapp"
-  location            = var.region
-  tags                = local.aa_tags
+resource "azurerm_resource_group" "fa_rg" {
+  name     = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
+  location = var.region
+  tags     = local.aa_tags
 }
 
 resource "azurerm_storage_account" "fa_sa" {
   name                     = "aa${var.env_stage_abbr}${var.region_abbr}sa"
-  resource_group_name      = module.rg.name
-  location                 = module.rg.location
+  resource_group_name      = azurerm_resource_group.fa_rg.name
+  location                 = azurerm_resource_group.fa_rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   tags                     = local.aa_tags
@@ -84,8 +83,8 @@ resource "azurerm_storage_account" "fa_sa" {
 
 resource "azurerm_service_plan" "fa_plan" {
   name                = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa-plan"
-  resource_group_name = module.rg.name
-  location            = module.rg.location
+  resource_group_name = azurerm_resource_group.fa_rg.name
+  location            = azurerm_resource_group.fa_rg.location
   os_type             = "Windows"
   sku_name            = "Y1"
   tags                = local.aa_tags
@@ -93,8 +92,8 @@ resource "azurerm_service_plan" "fa_plan" {
 
 resource "azurerm_windows_function_app" "fa" {
   name                        = "aa-${var.env_stage_abbr}-${var.region_abbr}-fa"
-  location                    = module.rg.location
-  resource_group_name         = module.rg.name
+  location                    = azurerm_resource_group.fa_rg.location
+  resource_group_name         = azurerm_resource_group.fa_rg.name
   service_plan_id             = azurerm_service_plan.fa_plan.id
   storage_account_name        = azurerm_storage_account.fa_sa.name
   storage_account_access_key  = azurerm_storage_account.fa_sa.primary_access_key
