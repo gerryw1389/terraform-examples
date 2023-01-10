@@ -1,7 +1,25 @@
 
 name: 'Runs a build'
 description: 'Runs a build'
- 
+
+inputs:
+  client-id:  
+    description: 'client id'
+    required: true
+    default: 'client id'
+  client-secret:  
+    description: 'client secret'
+    required: true
+    default: 'client secret'
+  tenant-id:  
+    description: 'tenant id'
+    required: true
+    default: 'tenant id'
+  sub-id:  
+    description: 'sub id'
+    required: true
+    default: 'sub id'
+
 runs:
   using: "composite"
   steps:
@@ -20,10 +38,10 @@ runs:
         terraform init
       shell: bash
       env:
-        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
         environment: production
 
     - name: Terraform Validate
@@ -32,10 +50,10 @@ runs:
         terraform validate -no-color
       shell: bash
       env:
-        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
         environment: production
 
     - name: Terraform Plan
@@ -51,8 +69,8 @@ runs:
       continue-on-error: false
       shell: bash
       env:
-        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
         environment: production
