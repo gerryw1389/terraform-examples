@@ -1,0 +1,15 @@
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: bash
+      
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/workflows/2022-08-03-github-actions-setup
