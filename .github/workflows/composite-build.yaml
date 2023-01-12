@@ -1,0 +1,35 @@
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      environment: production
+      hub_prod: ${{ secrets.HUB_PROD }}
+      hub_nonprod: ${{ secrets.HUB_NONPROD }}
+      spoke_prod: ${{ secrets.SPOKE_PROD }}
+      spoke_nonprod: ${{ secrets.SPOKE_NONPROD }}
+      
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/workflows/2022-10-20-tf-new-subscription/build
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        sub-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }} 
+        hub_prod: ${{ secrets.HUB_PROD }}
+        hub_nonprod: ${{ secrets.HUB_NONPROD }}
+        spoke_prod: ${{ secrets.SPOKE_PROD }}
+        spoke_nonprod: ${{ secrets.SPOKE_NONPROD }}
