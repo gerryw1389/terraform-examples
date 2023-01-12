@@ -41,7 +41,7 @@ resource "azurerm_resource_group" "spoke_nonprod_rg" {
 
 # Read in parent
 data "azurerm_management_group" "management" {
-name = "Automation Admin"
+name = "automationadmin"
 }
 
 # Create child "Hub"
