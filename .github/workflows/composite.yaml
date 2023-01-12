@@ -23,7 +23,7 @@ jobs:
       
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/workflows/2022-10-20-tf-new-subscription/build
+    - uses: ./.github/workflows/2022-10-20-tf-new-subscription/release
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
