@@ -1,0 +1,123 @@
+
+name: 'Runs a release (terraform apply)'
+description: 'Runs a release (terraform apply)'
+
+inputs:
+  client-id:  
+    description: 'client id'
+    required: true
+    default: ' '
+  client-secret:  
+    description: 'client secret'
+    required: true
+    default: ' '
+  tenant-id:  
+    description: 'tenant id'
+    required: true
+    default: ' '
+  sub-id:  
+    description: 'sub id'
+    required: true
+    default: ' '
+  hub_prod:  
+    description: 'hub_prod'
+    required: true
+    default: ' '
+  hub_nonprod:  
+    description: 'hub_nonprod'
+    required: true
+    default: ' '
+  spoke_prod:  
+    description: 'spoke_prod'
+    required: true
+    default: ' '
+  spoke_nonprod:  
+    description: 'spoke_nonprod'
+    required: true
+    default: ' '
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Download Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.2.0
+
+    - name: Terraform Init
+      id: init
+      run: | 
+        cd ./2022-10-20-tf-new-subscription
+        terraform init
+      shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        HUB_PROD: ${{ inputs.hub_prod }}
+        HUB_NONPROD: ${{ inputs.hub_nonprod }}
+        SPOKE_PROD: ${{ inputs.spoke_prod }}
+        SPOKE_NONPROD: ${{ inputs.spoke_nonprod }}
+
+
+    - name: Terraform Validate
+      id: validate
+      run: |
+        terraform validate -no-color
+      shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        HUB_PROD: ${{ inputs.hub_prod }}
+        HUB_NONPROD: ${{ inputs.hub_nonprod }}
+        SPOKE_PROD: ${{ inputs.spoke_prod }}
+        SPOKE_NONPROD: ${{ inputs.spoke_nonprod }}
+
+    - name: Terraform Plan
+      id: plan
+      run: |
+        cd ./2022-10-20-tf-new-subscription
+        terraform plan \
+          -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+          -var="tenant_id=$ARM_TENANT_ID" \
+          -var="client_id=$ARM_CLIENT_ID" \
+          -var="client_secret=$ARM_CLIENT_SECRET" \
+          -var="hub_prod_id=$HUB_PROD" \
+          -var="hub_nonprod_id=$HUB_NONPROD" \
+          -var="spoke_prod_id=$SPOKE_PROD" \
+          -var="spoke_nonprod_id=$SPOKE_NONPROD" \
+          -out "tf.plan"
+      continue-on-error: false
+      shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        HUB_PROD: ${{ inputs.hub_prod }}
+        HUB_NONPROD: ${{ inputs.hub_nonprod }}
+        SPOKE_PROD: ${{ inputs.spoke_prod }}
+        SPOKE_NONPROD: ${{ inputs.spoke_nonprod }}
+
+    - name: Terraform Apply
+      id: apply
+      run: |
+        cd ./2022-10-20-tf-new-subscription
+        terraform apply -auto-approve -input=false ./tf.plan
+      continue-on-error: false
+      shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.client-id }}
+        ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        HUB_PROD: ${{ inputs.hub_prod }}
+        HUB_NONPROD: ${{ inputs.hub_nonprod }}
+        SPOKE_PROD: ${{ inputs.spoke_prod }}
+        SPOKE_NONPROD: ${{ inputs.spoke_nonprod }}
