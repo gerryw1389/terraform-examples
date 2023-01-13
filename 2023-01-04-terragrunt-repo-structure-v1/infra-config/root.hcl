@@ -7,11 +7,12 @@ generate "provider" {
   path      = "provider.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
+
 terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.20.0"
+      version = "3.30.0"
     }
   }
 
@@ -90,7 +91,6 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
-}
 }
 
 EOF
