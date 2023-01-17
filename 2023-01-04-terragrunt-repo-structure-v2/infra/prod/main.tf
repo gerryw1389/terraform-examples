@@ -10,7 +10,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "aa-${var.environment}-${var.env_stage_abbr}-${var.sub_abbr}-${var.region_abbr}-mgmt-rg"
+  name     = "aa-${var.environment}-${var.env_stage_abbr}-${var.sub_abbr}-${var.region_abbr}-mgmt-prd-specific-rg"
   location = var.region
   tags     = local.aa_tags
 }
