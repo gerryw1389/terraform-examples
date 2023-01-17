@@ -58,13 +58,13 @@ variable "environment" {
 variable "env_stage" {
   description = "(Optional) The environment stage. Example: development, qa, or production."
   type        = string
-  default     = "development"
+  default     = "production"
 }
 
 variable "env_stage_abbr" {
   description = "(Optional) The environment stage abbreviation. Example: dev, qa, or prd."
   type        = string
-  default     = "dev"
+  default     = "prd"
 }
 
 variable "region" {
