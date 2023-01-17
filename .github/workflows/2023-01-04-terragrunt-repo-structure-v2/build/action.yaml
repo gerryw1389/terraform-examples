@@ -56,7 +56,7 @@ runs:
       id: plan
       run: | 
         cd 2023-01-04-terragrunt-repo-structure-v2
-        terragrunt run-all plan --terragrunt-working-dir infra-config/nonprod/hub/east/deployment
+        terragrunt run-all plan --terragrunt-working-dir infra-config/nonprod
       shell: bash
       env:
         TF_VAR_ARM_CLIENT_ID: ${{ inputs.client-id }}
