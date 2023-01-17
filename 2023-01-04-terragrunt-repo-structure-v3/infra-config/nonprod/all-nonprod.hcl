@@ -51,7 +51,7 @@ remote_state {
 
 
 terraform {
-  source = "${find_in_parent_folders("infra")}//prod"
+  source = "./"
 }
 
 inputs = {
