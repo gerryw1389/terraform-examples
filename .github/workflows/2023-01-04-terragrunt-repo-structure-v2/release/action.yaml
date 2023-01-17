@@ -1,0 +1,69 @@
+
+name: 'Runs a release (terraform apply)'
+description: 'Runs a release (terraform apply)'
+
+inputs:
+  client-id:  
+    description: 'client id'
+    required: true
+    default: ' '
+  client-secret:  
+    description: 'client secret'
+    required: true
+    default: ' '
+  tenant-id:  
+    description: 'tenant id'
+    required: true
+    default: ' '
+  sub-id:  
+    description: 'sub id'
+    required: true
+    default: ' '
+  hub_prod:  
+    description: 'hub_prod'
+    required: true
+    default: ' '
+  hub_nonprod:  
+    description: 'hub_nonprod'
+    required: true
+    default: ' '
+  spoke_prod:  
+    description: 'spoke_prod'
+    required: true
+    default: ' '
+  spoke_nonprod:  
+    description: 'spoke_nonprod'
+    required: true
+    default: ' '
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Download Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.2.0
+
+    - name: Setup Terragrunt
+      uses: autero1/action-terragrunt@v1.1.0
+      with:
+        terragrunt_version: 0.42.7
+
+    - name: Terragrunt Plan
+      id: plan
+      run: | 
+        cd 2023-01-04-terragrunt-repo-structure-v1
+        terragrunt run-all plan --terragrunt-working-dir 2023-01-04-terragrunt-repo-structure-v1/infra-config/nonprod/hub/east/deployment
+      shell: bash
+      env:
+        TF_VAR_ARM_CLIENT_ID: ${{ inputs.client-id }}
+        TF_VAR_ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        TF_VAR_ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        TF_VAR_ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        TF_VAR_hub_prod_id: ${{ inputs.hub_prod }}
+        TF_VAR_hub_nonprod_id: ${{ inputs.hub_nonprod }}
+        TF_VAR_spoke_prod_id: ${{ inputs.spoke_prod }}
+        TF_VAR_spoke_nonprod_id: ${{ inputs.spoke_nonprod }}
