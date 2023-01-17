@@ -23,7 +23,7 @@ jobs:
       
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/workflows/2023-01-04-terragrunt-repo-structure-v2/build
+    - uses: ./.github/workflows/2023-01-04-terragrunt-repo-structure-v3/build
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}

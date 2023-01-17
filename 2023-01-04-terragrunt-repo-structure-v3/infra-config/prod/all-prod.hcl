@@ -67,10 +67,12 @@ inputs = {
   hub_prod_id      = local.hub_prod_id
 
   # Optional
+  environment    = local.env_stage
   env_stage      = local.env_stage
   env_stage_abbr = local.env_stage_abbr
   region         = local.region
   region_abbr    = local.region_abbr
+  sub_abbr       = local.sub_abbr
 
 }
 
