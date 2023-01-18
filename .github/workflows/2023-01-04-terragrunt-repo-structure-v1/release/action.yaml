@@ -56,7 +56,23 @@ runs:
       id: plan
       run: | 
         cd 2023-01-04-terragrunt-repo-structure-v1
-        terragrunt run-all plan --terragrunt-working-dir 2023-01-04-terragrunt-repo-structure-v1/infra-config/nonprod/hub/east/deployment
+        terragrunt run-all plan --terragrunt-working-dir 2023-01-04-terragrunt-repo-structure-v1/infra-config/nonprod/hub/east/deployment -out "tf.plan"
+      shell: bash
+      env:
+        TF_VAR_ARM_CLIENT_ID: ${{ inputs.client-id }}
+        TF_VAR_ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
+        TF_VAR_ARM_SUBSCRIPTION_ID: ${{ inputs.sub-id }}
+        TF_VAR_ARM_TENANT_ID: ${{ inputs.tenant-id }}
+        TF_VAR_hub_prod_id: ${{ inputs.hub_prod }}
+        TF_VAR_hub_nonprod_id: ${{ inputs.hub_nonprod }}
+        TF_VAR_spoke_prod_id: ${{ inputs.spoke_prod }}
+        TF_VAR_spoke_nonprod_id: ${{ inputs.spoke_nonprod }}
+
+    - name: Terragrunt Apply
+      id: apply
+      run: | 
+        cd 2023-01-04-terragrunt-repo-structure-v1
+        terragrunt run-all apply --terragrunt-working-dir 2023-01-04-terragrunt-repo-structure-v1/infra-config/nonprod/hub/east/deployment --terragrunt-non-interactive ./tf-plan
       shell: bash
       env:
         TF_VAR_ARM_CLIENT_ID: ${{ inputs.client-id }}
