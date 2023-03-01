@@ -1,0 +1,5 @@
+env_stage_abbr = "nonprd"
+region_abbr    = "scus"
+tags_app_env   = "nonprd"
+sub_abbr       = "spk"
+region         = "southcentralus"

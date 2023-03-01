@@ -73,7 +73,7 @@ variable "region" {
 }
 
 variable "region_abbr" {
-  description = "(Optional) The region abbreviation. Example: wus, eus, scus"
+  description = "(Optional) The region abbreviation. Example: eus, scus"
   type        = string
   default     = "scus"
 }

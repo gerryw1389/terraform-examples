@@ -1,0 +1,68 @@
+parameters:
+  - name: subscription
+    displayName: subscription
+    type: string
+    default: hub
+    values:
+      - hub
+      - spoke
+  - name: region
+    displayName: region
+    type: string
+    default: scus
+    values:
+      - eus
+      - scus
+  - name: buildagent_os
+    displayName: buildagent_os
+    type: string
+    default: linux
+    values:
+      - linux
+      - windows
+
+variables:
+- name: SUB
+  value: ${{ parameters.subscription }}
+- name: REGION
+  value: ${{ parameters.region }}
+- name: BUILDAGENT_OS
+  value: ${{ parameters.buildagent_os }}
+
+resources:
+  repositories:
+    - repository: example-repo
+      type: git
+      name: my-project/example-repo
+      ref: main
+      
+trigger:
+  - none
+
+stages:
+
+# hub
+- ${{ if and( eq(variables['SUB'], 'hub'), eq(variables['REGION'], 'scus'), eq(variables['BUILDAGENT_OS'], 'linux') )}}:
+  - template: 'hub/build/prod-scus-linux.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'hub'), eq(variables['REGION'], 'scus'), eq(variables['BUILDAGENT_OS'], 'windows') )}}:
+  - template: 'hub/build/prod-scus-windows.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'hub'), eq(variables['REGION'], 'eus'), eq(variables['BUILDAGENT_OS'], 'linux') )}}:
+  - template: 'hub/build/prod-eus-linux.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'hub'), eq(variables['REGION'], 'eus'), eq(variables['BUILDAGENT_OS'], 'windows') )}}:
+  - template: 'hub/build/prod-eus-windows.yaml'
+
+# spoke
+- ${{ if and( eq(variables['SUB'], 'spoke'), eq(variables['REGION'], 'scus'), eq(variables['BUILDAGENT_OS'], 'linux') )}}:
+  - template: 'spoke/build/prod-scus-linux.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'spoke'), eq(variables['REGION'], 'scus'), eq(variables['BUILDAGENT_OS'], 'windows') )}}:
+  - template: 'spoke/build/prod-scus-windows.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'spoke'), eq(variables['REGION'], 'eus'), eq(variables['BUILDAGENT_OS'], 'linux') )}}:
+  - template: 'spoke/build/prod-eus-linux.yaml'
+
+- ${{ if and( eq(variables['SUB'], 'spoke'), eq(variables['REGION'], 'eus'), eq(variables['BUILDAGENT_OS'], 'windows') )}}:
+  - template: 'spoke/build/prod-eus-windows.yaml'

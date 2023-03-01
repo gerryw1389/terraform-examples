@@ -1,0 +1,30 @@
+
+parameters:
+  - name: increment
+    displayName: Bump version
+    type: string
+    default: release
+    values:
+      - major
+      - minor
+      - release
+
+variables:
+- name: INCREMENT
+  value: ${{ parameters.increment }}
+
+resources:
+  repositories:
+    - repository: example-repo
+      type: git
+      name: my-project/example-repo
+      ref: main
+
+trigger:
+  - none
+
+stages:
+
+- template: 'bump_module_steps.yaml'
+  parameters:
+    increment: ${{ variables.INCREMENT }}

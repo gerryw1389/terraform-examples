@@ -1,0 +1,107 @@
+
+parameters:
+- name: increment
+  type: string
+  default: " "
+
+stages:
+- stage: Bump_Version
+
+  jobs:
+  - job: bump_version
+    displayName: 'Bump module version'
+    continueOnError: false
+    pool:
+      name: 'linux-buildagent'
+    steps:
+
+      - checkout: self
+        persistCredentials: true
+
+      - checkout: example-repo
+
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          workingDirectory: $(Build.SourcesDirectory)/2023-02-27-terraform-template
+          failOnStderr: true
+          script: |
+            
+            old_version="$(git tag | tr - \~ | sort -V | tr \~ -| tail -1 | sed -e "s/v//" -r)"
+            echo "##vso[task.setvariable variable=Version.Old;isreadonly=true]$old_version"
+            echo $old_version
+
+            function incr_semver() { 
+                IFS='.' read -ra ver <<< "$1"
+                [[ "${#ver[@]}" -ne 3 ]] && echo "Invalid semver string" && return 1
+                [[ "$#" -eq 1 ]] && level='release' || level=$2
+
+                release=${ver[2]}
+                minor=${ver[1]}
+                major=${ver[0]}
+
+                case $level in
+                    release)
+                        release=$((release+1))
+                    ;;
+                    minor)
+                        release=0
+                        minor=$((minor+1))
+                    ;;
+                    major)
+                        release=0
+                        minor=0
+                        major=$((major+1))
+                    ;;
+                    *)
+                        echo "Invalid level passed"
+                        return 2
+                esac
+                echo "$major.$minor.$release"
+            }
+            new_version="$(incr_semver $old_version ${{ parameters.increment }})"
+            full_new_version=v$new_version
+            echo "new version : $full_new_version"
+            echo "##vso[task.setvariable variable=Version.New;isreadonly=true]$full_new_version"
+            # echo "##vso[build.updatebuildnumber]$full_new_version"
+        displayName: 'Bump version'
+
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          failOnStderr: true
+          workingDirectory: $(Build.SourcesDirectory)/2023-02-27-terraform-template
+          script: |
+            unreleased_query="baseVersion=GBmain\&targetVersion=GT$(Version.New)\&_a=commits"
+            unreleased_url="$(Build.Repository.Uri)/branchCompare?${unreleased_query}"
+            unreleased_header="## [Unreleased]($unreleased_url)"
+
+            released_query="baseVersion=GT$(Version.New)\&targetVersion=GT$(Version.Old)\&_a=commits"
+            released_url="$(Build.Repository.Uri)/branchCompare?${released_query}"
+            date="$(date '+%Y-%m-%d')"
+            released_header="## [$(Version.New)]($released_url) - $date"
+
+            sed -e "s|^## \[Unreleased\].*|$unreleased_header\n\n$released_header|" --follow-symlinks -i docs/changelog.md
+        displayName: 'Update changelog'
+
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          failOnStderr: true
+          workingDirectory: $(Build.SourcesDirectory)/2023-02-27-terraform-template
+          script: |
+            git config --global user.name "$(Build.RequestedFor)"
+            git config --global user.email $(Build.RequestedForEmail)
+
+            git commit -a -m "Bump version to $(Version.New)" -m '[skip ci]' --allow-empty
+            git tag -a -m 'Release $(Version.New)' $(Version.New)
+        displayName: 'Create release tag'
+      
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          failOnStderr: true
+          workingDirectory: $(Build.SourcesDirectory)/2023-02-27-terraform-template
+          script: |
+            git push --follow-tags --porcelain origin 'HEAD:$(Build.SourceBranchName)'
+        displayName: 'Push release tag'

@@ -1,0 +1,97 @@
+
+stages:
+
+- stage: NonProd_Build
+  jobs: 
+  - job: terraform_build
+    displayName: 'NonProd_Build'
+    workspace:
+      clean: all 
+    timeoutInMinutes: 0
+    cancelTimeoutInMinutes: 0
+    pool:
+        name: 'windows-buildagent'
+    variables:
+      - group: nonprod-secrets
+
+    steps:
+      - checkout: example-repo
+
+      - task: PowerShell@2
+        displayName: Tokenize TF-Module Sources
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        inputs:
+          targetType: 'inline'
+          script: |
+            git config --global http.extraHeader 'Authorization: Bearer $(System.AccessToken)'
+     
+      - task: UniversalPackages@0
+        displayName: 'Download Terraform v1.3.5'
+        inputs:
+          command: download
+          vstsFeed: 'my-project/binaries_download'
+          vstsFeedPackage: 'terraform-windows'
+          vstsPackageVersion: '0.0.1'
+          downloadDirectory: $(Build.SourcesDirectory)
+
+      - task: PowerShell@2
+        displayName: 'Install Terraform'
+        inputs:
+          targetType: 'inline'
+          workingDirectory: $(Build.SourcesDirectory)
+          script: |
+            New-Item -ItemType "Directory" -Name "src" | Out-Null
+            Move-Item -Path "terraform.exe" -Destination ".\src\terraform.exe"
+      
+      - task: CopyFiles@2
+        displayName: 'Copy Sub Folder To Root Dir'
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)\2023-02-27-terraform-template\infra\nonprod\spoke\scus
+          Contents: "**"
+          overWrite: true
+          TargetFolder: $(Build.SourcesDirectory)
+      
+      - task: Powershell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            .\src\terraform.exe init
+        displayName: 'Run init'
+      
+      - task: Powershell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            .\src\terraform.exe validate
+        displayName: 'Run validate'
+      
+      - task: Powershell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            .\src\terraform.exe plan
+        env:
+          TF_VAR_tenant_id: $(my-tenant)
+          TF_VAR_client_id: $(tf-spn-display-name)
+          TF_VAR_client_secret: $(tf-spn-secret)
+          TF_VAR_subscription_id: $(aa-spoke-id)
+          TF_VAR_hub_subscription_id: $(aa-hub-id)
+          TF_VAR_pipeline: $(Build.Repository.Name)
+          TF_VAR_requested_for: $(Build.RequestedFor)
+          TF_VAR_requested_for_email: $(Build.RequestedForEmail)
+          TF_INPUT: 0
+        displayName: 'Run plan - nonprod/spoke/scus'
+
+      - task: PublishBuildArtifacts@1
+        condition: always()
+        inputs:
+          pathToPublish: '$(Build.ArtifactStagingDirectory)' 
+          artifactName: 'trace_file'    
+
+      - task: DeleteFiles@1
+        condition: always()
+        displayName: 'Delete files from $(Build.SourcesDirectory)'
+        inputs:
+          SourceFolder: '$(Build.SourcesDirectory)'
+          Contents: '*'

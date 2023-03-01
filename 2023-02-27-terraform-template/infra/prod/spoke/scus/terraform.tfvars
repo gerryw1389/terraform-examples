@@ -1,0 +1,5 @@
+env_stage_abbr = "prd"
+region_abbr    = "scus"
+tags_app_env   = "prd"
+sub_abbr       = "spk"
+region         = "southcentralus"
